@@ -1,0 +1,83 @@
+name: kari
+services:
+  postgres:
+    image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+    environment:
+      POSTGRES_DB: kari
+      POSTGRES_USER: kari_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your ignored .env}
+      KARI_DB_PASSWORD: ${KARI_DB_PASSWORD:?Set a separate application DB password in your ignored .env}
+    volumes:
+      - kari-data:/var/lib/postgresql/data
+      - ./deploy/init-runtime-role.sh:/docker-entrypoint-initdb.d/10-kari-runtime.sh:ro
+    networks: [database]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kari_admin -d kari"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    logging: &logs
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  kari:
+    build: {context: ., target: runtime}
+    image: kari:local
+    environment:
+      DATABASE_URL: postgresql://kari_app:${KARI_DB_PASSWORD:?Set KARI_DB_PASSWORD}@postgres:5432/kari
+      KARI_SITES_JSON: ${KARI_SITES_JSON:-[{"id":"portfolio","name":"Jovan portfolio","origins":["http://localhost:8080"],"knowledgePath":"data/portfolio.json"}]}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      AI_CAPABILITIES_VERIFIED: ${AI_CAPABILITIES_VERIFIED:-false}
+      AI_BASE_URL: https://ai.yogathedev.com/v1
+      AI_DEFAULT_MODEL: deepseek-v4-flash
+      AI_API_KEY: ${AI_API_KEY:-}
+      TELEGRAM_ENABLED: ${TELEGRAM_ENABLED:-false}
+      TELEGRAM_OWNER_ID: ${TELEGRAM_OWNER_ID:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+      KARI_TRUSTED_PROXIES: ${KARI_TRUSTED_PROXIES:-}
+    networks: [web, database]
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: unless-stopped
+    mem_limit: 384m
+    cpus: 0.5
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: *logs
+  portfolio:
+    image: jovan-portfolio:kari
+    build:
+      context: ../portfolio
+      args:
+        SITE_URL: ${SITE_URL:-http://localhost:8080}
+        KARI_ENABLED: "true"
+        KARI_WIDGET_URL: /kari/embed.js
+        KARI_API_BASE: /kari/api
+        KARI_SITE_ID: portfolio
+    ports: ["${PORTFOLIO_PORT:-8080}:80"]
+    networks: [web]
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.2
+    logging: *logs
+  migrate:
+    profiles: [tools]
+    build: {context: ., target: migrate}
+    image: kari-migrate:local
+    environment:
+      DATABASE_URL: postgresql://kari_admin:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/kari
+    networks: [database]
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+networks:
+  web:
+  database:
+    internal: true
+volumes:
+  kari-data:

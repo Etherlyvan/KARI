@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>KARI — demo portfolio</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#09090b;color:#f5f0e7;font:16px/1.6 system-ui,sans-serif}nav{padding:24px 6%;display:flex;justify-content:space-between;border-bottom:1px solid #ffffff20}nav a{color:inherit;text-decoration:none;margin-left:24px}main{max-width:1120px;margin:auto;padding:90px 28px 120px}.eyebrow{color:#ff285b;font-size:12px;font-weight:800;letter-spacing:3px}h1{font:900 clamp(48px,10vw,112px)/.95 system-ui;margin:28px 0;letter-spacing:-5px}h1 span{display:block}p{max-width:550px;color:#c1bdc5}.cta{display:inline-block;margin:20px 0 70px;padding:13px 25px;background:#d70c3f;color:white;text-decoration:none;font-weight:800}.projects{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{padding:25px;border:1px solid #ffffff26;background:#141318;min-height:160px}.card h2{font-size:19px;margin:0 0 12px}.card p{font-size:14px}.note{font-size:13px;margin-top:55px}code{background:#24212a;padding:3px 6px;color:#ff9cbb}footer{border-top:1px solid #ffffff20;padding:25px 6%;font-size:13px;color:#9b919e}@media(max-width:600px){main{padding-top:60px}.projects{grid-template-columns:1fr}nav a{margin-left:12px;font-size:13px}h1{letter-spacing:-2px}}
+  </style>
+</head>
+<body>
+  <nav><strong>JOVAN / DEMO</strong><div><a href="#projects">Projects</a><a href="/demo/second-site.html">Website lain</a></div></nav>
+  <main><div class="eyebrow">UNIVERSAL COMPANION WIDGET</div><h1><span>JOVAN</span>PRABOWO.</h1><p>Software engineer yang mengembangkan aplikasi web, sistem bisnis, dan pengalaman AI. Ini halaman demo lokal, bukan perubahan website portfolio.</p><a class="cta" href="#projects">LIHAT PROYEK ↗</a>
+    <section class="projects" id="projects"><article class="card"><h2>Batikpedia</h2><p>Pengalaman museum 3D untuk budaya batik Indonesia.</p></article><article class="card"><h2>Genbatik</h2><p>Eksplorasi generasi batik berbasis DreamBooth dan ControlNet.</p></article><article class="card"><h2>RAHO ERP</h2><p>Aplikasi bisnis untuk operasi dan alur kerja internal.</p></article></section>
+    <p class="note">Klik KARI di kanan bawah. Coba <code>Kari, pindah ke kiri</code> atau <code>Tetap di sini</code>. Pertanyaan publik memakai FAQ lokal saat inference dinonaktifkan.</p>
+  </main><footer>KARI demo · Bubble kecil, source terpisah, tanpa browser API key.</footer>
+  <kari-widget site-id="portfolio" api-base="/kari/api" position="bottom-right"></kari-widget>
+  <script type="module" src="/kari/embed.js"></script>
+</body></html>

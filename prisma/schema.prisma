@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model SpendBucket {
+  id           String @id
+  usedMicroUsd BigInt @default(0)
+}
+
+model SpendReservation {
+  id            String   @id
+  model         String
+  maxMicroUsd   BigInt
+  actualMicroUsd BigInt?
+  status        String   @default("held")
+  bucketIds     String[]
+  createdAt     DateTime @default(now())
+  settledAt     DateTime?
+}
+
+model FinancialState {
+  id            String  @id
+  blockedReason String?
+}
+
+model Note {
+  id         String   @id @default(uuid())
+  ownerId    String
+  requestId  String   @unique
+  text       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([ownerId, createdAt])
+}
+
+model Reminder {
+  id             String   @id @default(uuid())
+  ownerId        String
+  requestId      String   @unique
+  text           String
+  channel        String
+  recipient      String
+  dueAt          DateTime
+  expiresAt      DateTime
+  status         String   @default("pending")
+  attempts       Int      @default(0)
+  nextAttemptAt  DateTime
+  leaseUntil     DateTime?
+  leaseId        String?
+  providerId     String?
+  lastError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([ownerId, dueAt])
+}
