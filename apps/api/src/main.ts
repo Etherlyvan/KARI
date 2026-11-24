@@ -26,7 +26,7 @@ export async function main() {
   const app = await createApp({ config, persistence, logger: true, acquireInference, registerRoutes(server) {
     if (process.env.DEMO_ENABLED === 'true') {
       server.get('/', async (_req, reply) => reply.redirect('/demo/'));
-      for (const [path, file] of [['/demo/', 'index.html'], ['/demo/second-site.html', 'second-site.html']]) {
+      for (const [path, file] of [['/demo/', 'index.html'], ['/demo/second-site.html', 'second-site.html'], ['/demo/pixel.html', 'pixel.html']]) {
         server.get(path!, async (_req, reply) => reply.header('Cache-Control', 'no-store').type('text/html; charset=utf-8').send(await readFile(resolve('demo', file!))));
       }
     }

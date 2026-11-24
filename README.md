@@ -7,12 +7,13 @@ KARI adalah companion widget yang dapat dipasang pada website tanpa bergantung p
 ## Yang tersedia
 
 - Widget TypeScript/CSS dengan Shadow DOM, bubble/input kecil, posisi kanan bawah, anchor alternatif, gerak acak terbatas, perintah pindah, minimize/hide, keyboard dan reduced motion.
+- Tampilan pixel opt-in `appearance="pixel"`: renderer Canvas 48 x 72 berbasis kode dengan FSM Companion V2, kedipan, ekspresi, tidur/bangun dan pose yang dipilih sesuai konteks; tanpa PNG baru atau request AI untuk animasi. Tampilan gambar lama tetap default.
 - FAQ publik dari artifact knowledge per website; sesi pengunjung terisolasi melalui token singkat dalam memori widget, tanpa cookie pihak ketiga.
 - NestJS + Fastify, Zod, Pino, Prisma 7/PostgreSQL, pembatasan request, deduplikasi request dan reservasi spending durable sebelum inference.
 - Satu model ekonomis melalui yogathedev AI Router, setelah konfigurasi dan verifikasi operator; tidak ada `auto`, advanced routing atau retry inference otomatis.
 - Catatan dan reminder satu kali untuk pemilik Telegram yang terverifikasi; teman ngobrol pribadi memakai persona hangat/playful, dan inference hanya jika diaktifkan.
 
-**Belum tersedia:** pengiriman WhatsApp, reminder berulang, login pemilik pada website, voice/lip-sync, atau atlas dengan ekspresi mata/anggota tubuh independen. Artwork saat ini adalah PNG transparan dengan transform/CSS glitch; jangan menyebutnya animasi facial lengkap atau model 3D.
+**Belum tersedia:** pengiriman WhatsApp, reminder berulang, login pemilik pada website, voice/lip-sync, rig skeletal lengkap, atau model 3D. Mode `image` memakai PNG transparan dengan transform/CSS glitch; mode `pixel` menggambar ekspresi serta pose langsung dalam grid, bukan atlas PNG atau rig facial penuh.
 
 ## Stack dan struktur
 
@@ -25,7 +26,7 @@ apps/widget/src/    Web Component TypeScript dan CSS
 assets/kari.png     Artwork karakter
 prisma/             Schema dan migrasi PostgreSQL
 data/              Artifact knowledge publik yang diizinkan
-demo/              Dua halaman host dengan gaya berbeda
+demo/              Dua halaman host dan playground pixel opt-in
 tests/             Test offline dan integrasi PostgreSQL opsional
 ```
 
@@ -50,6 +51,8 @@ npm start
 URI dummy di atas hanya memenuhi konfigurasi generator Prisma; generate tidak menghubungi database tersebut. Jangan menggunakannya untuk migrasi atau produksi. Pada shell POSIX, jalankan satu perintah scoped `DATABASE_URL=postgresql://generate:generate@127.0.0.1:5432/generate npm run db:generate` sebagai pengganti tiga baris PowerShell pengaturan/penghapusan environment.
 
 Buka `http://localhost:3000/demo/` dan `http://localhost:3000/demo/second-site.html`. Keduanya memakai widget yang sama; halaman kedua masih memakai `site-id="portfolio"` untuk mendemonstrasikan perbedaan styling, bukan konteks bisnis situs kedua. Daftarkan site ID/knowledge terpisah untuk konteks lain.
+
+Untuk tampilan pixel, buka **`http://localhost:3000/demo/pixel.html`** dengan `DEMO_ENABLED=true`. Portrait besar menjalankan FSM berbobot, bukan loop 16 frame yang terus sama; tombol Santai/Mikir/Ngobrol/Senang/Penasaran memberi preview singkat lalu perilaku kembali berjalan. Coba **Angkat**/**Glitch**, atau jeda/putar animasi. Portrait tidak berpindah lokasi; widget di kanan bawah memperagakan navigasi sebenarnya. Burst glitch hanya saat terjaga dan tidak mengganggu kondisi pause/reduced motion/hidden. **Tahan dan seret KARI di kanan bawah** untuk mengangkat serta menaruh karakter; klik biasa membuka bubble. Halaman ini opt-in; tidak mengganti portfolio atau dua demo gambar sebelumnya. Untuk screenshot pengembangan saja, `?behavior=SLEEP` dapat memilih pose awal; URL normal tidak memaksa urutan perilaku. Jika memakai port lokal lain, sesuaikan URL dan exact-origin pada `KARI_SITES_JSON`.
 
 Setelah build pertama, `npm run dev` me-restart backend saat source berubah; perubahan widget tetap membutuhkan `npm run build:widget`. Environment `.env` dimuat oleh script `dev`/`start`. Test tidak memakai secret atau inference nyata. Tanpa PostgreSQL, fitur publik lokal tetap dapat digunakan; catatan, reminder dan inference berbayar tidak tersedia.
 
@@ -90,7 +93,23 @@ Origin harus persis sama, termasuk skema dan port; jangan menambahkan slash/path
 | `site-id` | ID publik yang didaftarkan server; default `portfolio` |
 | `api-base` | Prefix API KARI, URL HTTPS eksternal atau path relatif satu origin |
 | `position` | `bottom-right` (default), `bottom-left`, `middle-right`, `middle-left` |
-| `avatar-src` | Opsional: asset karakter HTTPS yang dipercaya; default artwork KARI |
+| `appearance` | `image` (default) atau `pixel`; pixel harus diaktifkan eksplisit |
+| `avatar-src` | Opsional: asset HTTPS yang dipercaya untuk mode `image`; diabaikan saat mode `pixel` |
+| `behavior-config` | Opsional: JSON konfigurasi lokal Companion V2; frekuensi, waktu tidur/gerak dan personality seperti di bawah |
+
+Untuk mengaktifkan pixel pada website host, cukup tambahkan atribut pada elemen yang sama; loader, site ID dan API tidak berubah:
+
+```html
+<kari-widget
+  api-base="https://kari.example.com/kari/api"
+  site-id="my-website"
+  position="bottom-right"
+  appearance="pixel"
+></kari-widget>
+<script type="module" src="https://kari.example.com/kari/embed.js"></script>
+```
+
+Menghapus atribut `appearance` atau memakai `appearance="image"` mengembalikan gambar default. Grid pixel 48 x 72 diperbesar dengan tepi piksel tajam, mengikuti state request/UI dan pengendali motion lokal yang sama. Mode ini tidak memuat PNG avatar dan tidak memerlukan request inference tambahan; reduced motion, jeda animasi, hide dan penghentian saat tab tersembunyi tetap berlaku. Kemampuan chat dan izin pemilik tidak berubah karena pilihan tampilan.
 
 `site-id` bukan API key, autentikasi pemilik atau izin mengambil konteks situs lain. Backend memeriksa hubungan site ID, origin dan token pengunjung pada setiap permintaan. Atribut `owner` atau pengakuan "aku Jovan" tidak membuka mode pribadi.
 
@@ -112,18 +131,79 @@ CSP website perlu mengizinkan origin modul/chunks, gambar dan API. Widget 0.1 me
 
 Klik/fokuskan KARI untuk membuka bubble. Balasan tetap dekat karakter tanpa window chat besar. Perintah lokal berikut tidak memakai inference:
 
+**Memindahkan dengan tangan:** tahan karakter sekitar 320 ms atau seret sedikitnya 6 px dengan mouse/sentuhan untuk mengangkatnya. Klik biasa hanya membuka bubble dan tidak memindahkan maskot. Kursor berubah menjadi menggenggam dan KARI berpose terangkat; lepaskan untuk menaruhnya pada posisi baru yang dibatasi viewport. Posisi manual dipertahankan selama interaksi; sesudah idle `manualReturnMs`, KARI dapat kembali ke area pinggir yang aman jika tidak dipin dan percakapan tidak sedang dipakai. Gunakan **Tetap di sini** untuk pin eksplisit. Escape membatalkan drag; alternatif keyboard adalah fokus pada launcher lalu **Shift + tombol panah**. Drag/drop memakai pose fisik dan landing lembut, tidak memicu petir atau glitch sebagai efek perpindahan. Input, bubble dan kontrol lain tetap bisa dipakai normal; `touch-action` khusus drag hanya berlaku pada launcher karakter, bukan seluruh halaman.
+
 | Perintah | Respons |
 |---|---|
 | `Kari, halo` | Sapaan lokal |
 | `Kari, pindah ke kiri` | Memilih anchor kiri yang aman |
 | `Ke kanan bawah` | Kembali ke anchor default |
-| `Pindah tempat` / `minggir` | Memilih anchor aman lain |
+| `Pindah tempat` / `minggir` | Memilih koordinat acak aman lain |
 | `Tetap di sini` | Mengunci posisi |
 | `Serius dulu` / `tenang` / `jangan banyak gerak` | Mengurangi gestur dan gerak |
 
 Gerak acak berhenti saat mengetik, hover/fokus aktif atau jawaban diproses. Mobile/reduced motion membatasi gerak otomatis; kontrol lokal dapat mengubah preferensi yang didukung. Minimize/Escape menutup bubble; hide menyisakan kontrol buka kembali. Menyembunyikan widget tidak membatalkan reminder pada backend.
 
-Pose idle/think/talk/error mengikuti status request nyata; tanpa inference tambahan untuk emosi atau animasi. Artwork awal berukuran 1.254 ? 1.254, 459.335 byte transfer dan sekitar 6 MiB untuk satu buffer RGBA sebelum overhead browser. Bundle widget terukur sekitar 25,4 KiB mentah / 8,1 KiB gzip pada build awal. Angka ini bukan jaminan peak RAM perangkat atau server. Layer/transform saat ini tidak menggantikan atlas ekspresi wajah yang belum dibuat.
+Pose mengikuti state percakapan dan interaksi nyata; tidak ada inference tambahan untuk emosi atau animasi. Artwork mode `image` berukuran 1254 x 1254, 459.335 byte transfer dan sekitar 6 MiB untuk satu buffer RGBA sebelum overhead browser; renderer pixel tidak memuat PNG itu. Ukuran bundle V2 perlu diukur dari output `npm run build:widget` untuk release yang dipakai, bukan diasumsikan sama dengan build pixel sebelumnya. Mode pixel menggambar mata, mulut serta anggota tubuh dari kode; mode gambar memakai transform/CSS. Keduanya bukan rig skeletal, voice animation atau model 3D.
+
+## Companion V2: perilaku, gerak dan konfigurasi
+
+FSM memilih perilaku dengan bobot, kondisi dan cooldown, bukan rotasi acak yang selalu berulang sama. State yang tersedia: `IDLE`, `BLINK`, `LOOK_AROUND`, `THINKING`, `STRETCH`, `YAWN`, `SLEEP`, `SLEEP_TALK`, `WAKE_UP`, `WALK`, `RUN`, `DANCE`, `PLAY`, `CURIOUS`, `HAPPY`, `BORED`, `TALK`, `LISTEN`, `DRAGGED`, dan `LANDED`. Tidak semua state dipilih pada setiap situasi: request, ketikan, drag serta kondisi aman memiliki prioritas; perilaku ekspresif jarang memiliki cooldown.
+
+Default tidur dimulai setelah sekitar **3–5 menit tanpa interaksi**, melalui menguap lalu tidur di posisi bawah yang aman. Emote rebahan terjaga sudah dihapus. `SLEEP` meringkuk dengan kepala di atas lengan, mata tertutup dan Zzz. Saat `DRAGGED`, KARI tampak ditenteng pada badan/bahu: bahu sedikit terangkat, lengan rileks, lutut longgar dan kaki menjuntai dengan ayunan kecil. Kepala/rambut tetap utuh; bagian tubuh di bawah titik pegang tertinggal berlawanan arah drag lalu kembali tegak ketika berhenti. Titik sentuh dan posisi saat drag tetap dipertahankan. Melepas drag memberi pendaratan lembut tanpa glitch. Tidur berlangsung 30–90 detik; mengigau adalah ekspresi visual sesekali, bukan pesan pribadi atau panggilan AI. Sapaan/interaksi membangunkan KARI lewat state `WAKE_UP`, bukan langsung melompat ke ekspresi bicara. Gerak mata/kepala kecil memakai event pointer lokal yang dibatasi; tidak merekam lintasan pengguna atau mengirimkannya ke server.
+
+Ekspresi santai berganti lebih perlahan: melihat sekitar dan penasaran bertahan 6–9 detik, senang 6–8 detik, bosan 8–11 detik, lalu kembali netral selama 8–12 detik sebelum memilih gestur berikutnya. Perpindahan blink mempertahankan ekspresi yang sedang berjalan dan tidak meresetnya ke netral. Respons terhadap ketikan, request, angkat dan bangun tetap langsung mengikuti interaksi. Tombol ekspresi pada demo menahan pratinjau selama 8 detik.
+
+Struktur tanggung jawab berada pada sepuluh file di `apps/widget/src/companion/`:
+
+| File | Tanggung jawab |
+|---|---|
+| `types.ts` | Tipe state, pose, environment dan konfigurasi |
+| `CharacterController.ts` | Koordinasi lifecycle, satu clock rendering, interaksi dan gerak |
+| `BehaviorSystem.ts` | FSM berbobot, personality, cooldown serta tidur/bangun |
+| `AnimationController.ts` | Sample pose dari waktu dan batas frekuensi render per state |
+| `SpriteRenderer.ts` | Menggambar pose karakter pada Canvas kecil |
+| `MovementController.ts` | Gerak sepanjang rute, easing, arah hadap dan landing |
+| `EmotionController.ts` | Pemetaan reaksi lokal yang dibatasi |
+| `ConversationReactions.ts` | Reaksi dari status percakapan; tidak memberi izin aksi |
+| `SafeZoneManager.ts` | Area pinggir aman, exclusion dan rute yang menghindari konten |
+| `LightningEffect.ts` | Efek sementara untuk perpindahan otonom khusus |
+
+Contoh mengubah ritme pada elemen widget yang sama:
+
+```html
+<kari-widget
+  api-base="https://kari.example.com/kari/api"
+  site-id="my-website"
+  appearance="pixel"
+  behavior-config='{"decisionMs":1000,"sleepAfterMs":240000,"sleepMinMs":30000,"sleepMaxMs":90000,"moveMinMs":6000,"moveMaxMs":12000,"manualReturnMs":12000,"rareCooldownMs":60000,"personality":{"energy":0.68,"curiosity":0.62,"mood":0.72}}'
+></kari-widget>
+```
+
+Semua nilai waktu dalam milidetik. `sleepAfterMs` adalah pusat rentang idle sebelum tidur; default 240.000 memberi variasi 180.000–300.000. Default `moveMinMs`/`moveMaxMs` 6.000–12.000 memberi kesempatan blink setiap sekitar **6–12 detik di desktop**, atau **9–18 detik di mobile**. Mode pixel aktif bergerak otomatis di keduanya; **Tetap di sini**, reduced motion dan mode tenang tetap menghentikannya. Jeda adalah kesempatan gerak, bukan jaminan harus pindah ke tempat yang tidak aman. `manualReturnMs` default 12.000 mengevaluasi kembali posisi manual setelah idle; drop selalu mendapat jeda tenang terlebih dahulu. `rareCooldownMs` default 60.000 membatasi perilaku jarang. `decisionMs` dibatasi paling cepat satu detik. `personality.energy`, `curiosity` dan `mood` bernilai 0–1; ini parameter animasi lokal, bukan penilaian emosi manusia atau pengaturan model LLM. Konfigurasi tidak valid dibatasi/dikembalikan ke default dan tidak menambah hak akses backend.
+
+Tujuan blink diambil dari koordinat acak baru di sepanjang pita pinggir yang aman, termasuk variasi jarak dari tepi. Jarak perpindahan diacak tiap kesempatan; delapan posisi terakhir dan sisi yang sering dikunjungi diberi prioritas lebih rendah, sehingga karakter tidak sekadar bolak-balik antar-anchor. Jalur horizontal tetap mendapat kesempatan untuk menampilkan petir. Titik fallback dan langkah kecil tersedia untuk mobile yang sempit. Perintah umum `pindah tempat`, `minggir` dan `pindah` memakai pemilihan koordinat yang sama; perintah kiri/kanan yang spesifik tetap memakai anchor yang diminta. Jika ruang aman belum tersedia, geometri dievaluasi ulang setelah sekitar dua detik. Bubble yang terbuka tetapi idle tidak mengunci karakter selamanya; draft yang belum selesai, ketikan/composition, drag dan request yang sedang diproses tetap menahan perpindahan. Bubble juga diperiksa agar tujuan tidak menutup kontrol penting. Respons error tidak mengunci gerakan dan animasi bicara mempunyai durasi terbatas.
+
+Petir horizontal memakai geometri berseed per perpindahan: fork, busur ganda atau segmen putus, core cyan/hijau, echo magenta dan sisa percikan yang memudar. Geometri dihitung sekali, buffer canvas tetap berupa pita tipis, dan repaint dibatasi sekitar 30 fps. Tidur memakai delapan fase lambat: kaki/telapak tetap bertumpu, dada bernapas 1 px, kepala/rambut menyusul, core meredup dan Zzz naik lalu memudar. Waktu tidur tidak dihitung ulang akibat roaming; sesudah mengantuk, KARI berhenti roaming biasa dan tidur di tempat aman. Interaksi baru membatalkan persiapan tidur. Mode tenang/reduced motion memakai pose statis.
+
+Navigasi otonom hanya memakai area pinggir, memeriksa seluruh kotak karakter dan menghindari center content, navigasi, kontrol, link serta teks penting. Tambahkan `data-kari-avoid` atau `data-kari-exclude` pada elemen/container yang tidak boleh tertutup:
+
+```html
+<aside data-kari-avoid>Kontrol yang harus selalu dapat diakses</aside>
+```
+
+KARI berpindah dengan **blink** pada `appearance="pixel"`, baik saat roaming maupun menerima perintah pindah: tubuh terpotong menjadi garis energi, hilang di tempat asal selama minimal 180 ms, lalu muncul di tujuan. Fase hilang selalu mendapat frame tersendiri meskipun browser sempat lambat. Seluruh efek berlangsung sekitar setengah detik tanpa pose jalan/lari. Perpindahan horizontal dengan lintasan lurus yang aman meninggalkan garis listrik cyan/magenta; vertikal/diagonal cukup blink tanpa garis listrik. Tujuan tetap harus aman. Jika tidak ada tujuan aman, KARI tetap diam. Drop memakai pose netral dengan satu settling kecil, lalu diam selama enam detik; tidak memicu joget, listrik atau glitch. `DANCE` tidak dipilih otomatis. Efek berhenti ketika drag, ketikan baru, hidden atau reduced motion; perintah pindah pada reduced motion langsung menempatkan karakter tanpa efek. Canvas garis listrik hanya berupa pita tipis, pointer-transparent, dan dibersihkan setelah efek selesai. Opsi lama `lightningChance` tetap diterima untuk kompatibilitas, tetapi arah dan keamanan perpindahan kini menentukan efeknya.
+
+Di `/demo/pixel.html`, klik **Blink ↔** untuk memindahkan widget kecil di pojok antara kiri dan kanan. Portrait besar hanya memperagakan pose. Website host juga dapat meminta perpindahan lokal dengan API berikut; nilai balik `true` berarti tujuan aman dan perpindahan diterima:
+
+```js
+await customElements.whenDefined('kari-widget');
+document.querySelector('kari-widget')?.moveTo('bottom-left');
+```
+
+Tujuan yang didukung: `bottom-left`, `bottom-right`, `middle-left`, `middle-right`. Mengubah atribut `position` setelah widget terpasang juga memakai blink. Mode gambar lama tetap tersedia melalui `appearance="image"`; pasang `appearance="pixel"` untuk companion V2 dan efek blink.
+
+Pixel Canvas tetap kecil dan integer; sample pose bergantung waktu, bukan jumlah pemanggilan frame. Render idle/tidur lebih jarang daripada gerak aktif; loop/timer dihentikan ketika hidden, pause atau reduced motion sesuai konteks. Tidak menambah PNG, engine 3D, library rendering, layanan server, atau panggilan model untuk membuat KARI bergerak. Cache frame dan efek sementara dibatasi; ukur CPU/RAM dan ukuran bundle pada perangkat sasaran sebelum menaikkan kompleksitas.
 
 ## Konteks publik per website
 

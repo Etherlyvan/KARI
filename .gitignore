@@ -1,9 +1,24 @@
+# Dependencies and build output
 node_modules/
 dist/
+*.tsbuildinfo
+
+# Local environment and secrets
 .env
 .env.*
 !.env.example
+
+# Logs and test output
 *.log
-.DS_Store
 coverage/
+
+# Local development artifacts
 .local/
+.idea/
+*.swp
+*.swo
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
